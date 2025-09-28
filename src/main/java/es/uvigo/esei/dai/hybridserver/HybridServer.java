@@ -16,7 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- //holaaa esto es una prueba
 package es.uvigo.esei.dai.hybridserver;
 
 import java.io.IOException;
