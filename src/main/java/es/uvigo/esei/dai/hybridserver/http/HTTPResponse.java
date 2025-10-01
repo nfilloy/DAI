@@ -20,100 +20,72 @@ package es.uvigo.esei.dai.hybridserver.http;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class HTTPResponse {
-  private HTTPResponseStatus status;
-  private String version;
-  private String content;
-  private final Map<String, String> parameters;
-
   public HTTPResponse() {
-    this.status = HTTPResponseStatus.S200;
-    this.version = HTTPHeaders.HTTP_1_1.getHeader();
-    this.content = "";
-    this.parameters = new LinkedHashMap<>();
+    // TODO Completar
   }
 
   public HTTPResponseStatus getStatus() {
-    return this.status;
+    // TODO Completar
+    return null;
   }
 
   public void setStatus(HTTPResponseStatus status) {
-    this.status = status;
+    // TODO Completar
   }
 
   public String getVersion() {
-    return this.version;
+    // TODO Completar
+    return null;
   }
 
   public void setVersion(String version) {
-    this.version = version;
+    // TODO Completar
   }
 
   public String getContent() {
-    return this.content;
+    // TODO Completar
+    return null;
   }
 
   public void setContent(String content) {
-    this.content = content;
+    // TODO Completar
   }
 
   public Map<String, String> getParameters() {
-    return Collections.unmodifiableMap(this.parameters);
+    // TODO Completar
+    return null;
   }
 
   public String putParameter(String name, String value) {
-    return this.parameters.put(name, value);
+    // TODO Completar
+    return null;
   }
 
   public boolean containsParameter(String name) {
-    return this.parameters.containsKey(name);
+    // TODO Completar
+    return false;
   }
 
   public String removeParameter(String name) {
-    return this.parameters.remove(name);
+    // TODO Completar
+    return null;
   }
 
   public void clearParameters() {
-    this.parameters.clear();
+    // TODO Completar
   }
 
   public List<String> listParameters() {
-    return Collections.unmodifiableList(new ArrayList<>(this.parameters.keySet()));
+    // TODO Completar
+    return null;
   }
 
   public void print(Writer writer) throws IOException {
-    final HTTPResponseStatus status = this.status != null ? this.status : HTTPResponseStatus.S200;
-    final String version = this.version != null ? this.version : HTTPHeaders.HTTP_1_1.getHeader();
-    final String body = this.content != null ? this.content : "";
-
-    final Map<String, String> headers = new LinkedHashMap<>(this.parameters);
-    headers.putIfAbsent(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime() + "; charset=UTF-8");
-    headers.put(HTTPHeaders.CONTENT_LENGTH.getHeader(), Integer.toString(body.getBytes(StandardCharsets.UTF_8).length));
-
-    writer.write(version);
-    writer.write(' ');
-    writer.write(Integer.toString(status.getCode()));
-    writer.write(' ');
-    writer.write(status.getStatus());
-    writer.write("\r\n");
-
-    for (Map.Entry<String, String> param : headers.entrySet()) {
-      writer.write(param.getKey());
-      writer.write(": ");
-      writer.write(param.getValue());
-      writer.write("\r\n");
-    }
-
-    writer.write("\r\n");
-    writer.write(body);
-    writer.flush();
+    // TODO Completar
   }
 
   @Override
