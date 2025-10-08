@@ -41,11 +41,11 @@ public class HybridServer implements AutoCloseable {
     + "<html lang=\"es\">\n"
     + "  <head>\n"
     + "    <meta charset=\"UTF-8\"/>\n"
-    + "    <title>Servidor Hibrido</title>\n"
+    + "    <title>Hybrid Server</title>\n"
     + "  </head>\n"
     + "  <body>\n"
-    + "    <h1>Bienvenido</h1>\n"
-    + "    <p>Este servidor siempre devuelve la misma pagina.</p>\n"
+    + "    <h1>Hybrid Server</h1>\n"
+    + "    <p>Bienvenido a Hybrid Server.</p>\n"
     + "  </body>\n"
     + "</html>\n";
 
@@ -122,7 +122,7 @@ public class HybridServer implements AutoCloseable {
     response.setStatus(HTTPResponseStatus.S200);
     response.setContent(this.responseBody);
     response.putParameter(HTTPHeaders.CONNECTION.getHeader(), "close");
-    response.putParameter(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime() + "; charset=UTF-8");
+    response.putParameter(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime());
     return response;
   }
 
@@ -133,7 +133,7 @@ public class HybridServer implements AutoCloseable {
       + "</title></head><body><h1>" + status.getCode() + " " + status.getStatus() + "</h1><p>"
       + message + "</p></body></html>\n");
     response.putParameter(HTTPHeaders.CONNECTION.getHeader(), "close");
-    response.putParameter(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime() + "; charset=UTF-8");
+    response.putParameter(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime());
     return response;
   }
 

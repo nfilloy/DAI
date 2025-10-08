@@ -36,7 +36,7 @@ public class HTTPResponse {
   public HTTPResponse() {
     this.status = HTTPResponseStatus.S200;
     this.version = HTTPHeaders.HTTP_1_1.getHeader();
-    this.content = "";
+    this.content = null;
     this.parameters = new LinkedHashMap<>();
   }
 
@@ -91,11 +91,14 @@ public class HTTPResponse {
   public void print(Writer writer) throws IOException {
     final HTTPResponseStatus status = this.status != null ? this.status : HTTPResponseStatus.S200;
     final String version = this.version != null ? this.version : HTTPHeaders.HTTP_1_1.getHeader();
-    final String body = this.content != null ? this.content : "";
+    final String body = this.content;
 
     final Map<String, String> headers = new LinkedHashMap<>(this.parameters);
-    headers.putIfAbsent(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime() + "; charset=UTF-8");
-    headers.put(HTTPHeaders.CONTENT_LENGTH.getHeader(), Integer.toString(body.getBytes(StandardCharsets.UTF_8).length));
+
+    if (body != null) {
+      final int bodyLength = body.getBytes(StandardCharsets.UTF_8).length;
+      headers.putIfAbsent(HTTPHeaders.CONTENT_LENGTH.getHeader(), Integer.toString(bodyLength));
+    }
 
     writer.write(version);
     writer.write(' ');
@@ -112,7 +115,9 @@ public class HTTPResponse {
     }
 
     writer.write("\r\n");
-    writer.write(body);
+    if (body != null) {
+      writer.write(body);
+    }
     writer.flush();
   }
 

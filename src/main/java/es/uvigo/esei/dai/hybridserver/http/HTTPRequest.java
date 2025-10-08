@@ -26,8 +26,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class HTTPRequest {
+  private static final Pattern HTTP_VERSION_PATTERN = Pattern.compile("HTTP/\\d\\.\\d");
   private final HTTPRequestMethod method;
   private final String resourceChain;
   private final String[] resourcePath;
@@ -65,7 +67,7 @@ public class HTTPRequest {
 
     this.resourceChain = parts[1];
     this.httpVersion = parts[2];
-    if (!this.httpVersion.toUpperCase().startsWith("HTTP/")) {
+    if (!HTTP_VERSION_PATTERN.matcher(this.httpVersion).matches()) {
       throw new HTTPParseException("Unsupported HTTP version: " + this.httpVersion);
     }
 
@@ -85,6 +87,7 @@ public class HTTPRequest {
     final int length = parseContentLength(headers);
     this.contentLength = length;
 
+    String body = null;
     if (length > 0) {
       final char[] buffer = new char[length];
       int read = 0;
@@ -95,10 +98,15 @@ public class HTTPRequest {
         }
         read += n;
       }
-      this.content = new String(buffer);
-    } else {
-      this.content = "";
+      body = new String(buffer);
     }
+
+    String decodedBody = null;
+    if (body != null && isFormUrlEncoded(headers)) {
+      decodedBody = URLDecoder.decode(body, StandardCharsets.UTF_8);
+    }
+
+    this.content = decodedBody != null ? decodedBody : body;
 
     final String[] resourceParts = this.resourceChain.split("\\?", 2);
     final String rawPath = resourceParts[0];
@@ -108,13 +116,13 @@ public class HTTPRequest {
       .filter(segment -> !segment.isEmpty())
       .toArray(String[]::new);
     this.resourcePath = segments;
-    this.resourceName = segments.length > 0 ? segments[segments.length - 1] : "";
+    this.resourceName = segments.length > 0 ? String.join("/", segments) : "";
 
     final Map<String, String> queryParameters = new LinkedHashMap<>();
     parseParameters(queryString, queryParameters);
 
-    if (this.method == HTTPRequestMethod.POST && length > 0 && isFormUrlEncoded(headers)) {
-      parseParameters(this.content, queryParameters);
+    if (this.method == HTTPRequestMethod.POST && body != null) {
+      parseParameters(body, queryParameters);
     }
 
     this.resourceParameters = Collections.unmodifiableMap(queryParameters);
