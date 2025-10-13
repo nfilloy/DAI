@@ -40,7 +40,7 @@ import es.uvigo.esei.dai.hybridserver.http.HTTPResponseStatus;
 import es.uvigo.esei.dai.hybridserver.http.MIME;
 
 public class HybridServer implements AutoCloseable {
-  private static final int SERVICE_PORT = 8888;
+  private static final int DEFAULT_PORT = 8888;
   private static final int DEFAULT_POOL_SIZE = Math.max(1, Runtime.getRuntime().availableProcessors());
   private static final String HTML_RESOURCE = "html";
   private static final String DEFAULT_PAGE = "<!DOCTYPE html>\n"
@@ -58,31 +58,41 @@ public class HybridServer implements AutoCloseable {
   private final PageRepository pageRepository;
   private final String welcomePage;
   private final int workerThreads;
+  private final int port;
 
   private ExecutorService executor;
   private Thread serverThread;
   private volatile boolean stop;
 
   public HybridServer() {
-    this(Map.of());
+    this(DEFAULT_PORT, DEFAULT_PAGE, createInMemoryRepository(defaultPages()), DEFAULT_POOL_SIZE);
   }
 
   public HybridServer(Map<String, String> pages) {
-    this(DEFAULT_PAGE, pages, DEFAULT_POOL_SIZE);
+    this(DEFAULT_PORT, DEFAULT_PAGE, createInMemoryRepository(pages != null && !pages.isEmpty() ? pages : defaultPages()), DEFAULT_POOL_SIZE);
   }
 
   public HybridServer(Properties properties) {
-    this(DEFAULT_PAGE, extractPages(properties), DEFAULT_POOL_SIZE);
+    final int port = parsePort(properties);
+    final String welcome = extractWelcomePage(properties);
+    final int poolSize = parseWorkerThreads(properties);
+    final PageRepository repository = createRepository(properties);
+
+    this.port = port;
+    this.welcomePage = welcome;
+    this.pageRepository = repository;
+    this.workerThreads = Math.max(1, poolSize);
   }
 
-  private HybridServer(String welcomePage, Map<String, String> pages, int workerThreads) {
+  private HybridServer(int port, String welcomePage, PageRepository repository, int workerThreads) {
+    this.port = port;
     this.welcomePage = welcomePage != null ? welcomePage : DEFAULT_PAGE;
-    this.pageRepository = new PageRepository(pages);
+    this.pageRepository = repository;
     this.workerThreads = Math.max(1, workerThreads);
   }
 
   public int getPort() {
-    return SERVICE_PORT;
+    return this.port;
   }
 
   public void start() {
@@ -93,7 +103,7 @@ public class HybridServer implements AutoCloseable {
     this.stop = false;
     this.executor = Executors.newFixedThreadPool(this.workerThreads);
     this.serverThread = new Thread(() -> {
-      try (ServerSocket serverSocket = new ServerSocket(SERVICE_PORT)) {
+      try (ServerSocket serverSocket = new ServerSocket(this.port)) {
         while (true) {
           final Socket socket = serverSocket.accept();
           if (stop) {
@@ -135,12 +145,16 @@ public class HybridServer implements AutoCloseable {
   }
 
   private HTTPResponse handleRequest(HTTPRequest request) {
-    return switch (request.getMethod()) {
-      case GET -> handleGet(request);
-      case POST -> handlePost(request);
-      case DELETE -> handleDelete(request);
-      default -> createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S405, "Metodo no soportado");
-    };
+    switch (request.getMethod()) {
+      case GET:
+        return handleGet(request);
+      case POST:
+        return handlePost(request);
+      case DELETE:
+        return handleDelete(request);
+      default:
+        return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S405, "Metodo no soportado");
+    }
   }
 
   private HTTPResponse handleGet(HTTPRequest request) {
@@ -251,7 +265,7 @@ public class HybridServer implements AutoCloseable {
 
     this.stop = true;
 
-    try (Socket socket = new Socket("localhost", SERVICE_PORT)) {
+    try (Socket socket = new Socket("localhost", this.port)) {
       // Despierta al hilo aceptador
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -289,13 +303,92 @@ public class HybridServer implements AutoCloseable {
 
   private static Map<String, String> extractPages(Properties properties) {
     if (properties == null) {
-      return Map.of();
+      return new LinkedHashMap<>();
     }
 
     final Map<String, String> pages = new LinkedHashMap<>();
     for (String name : properties.stringPropertyNames()) {
-      pages.put(name, properties.getProperty(name));
+      if (name.startsWith("page.")) {
+        final String uuid = name.substring("page.".length()).trim();
+        if (!uuid.isEmpty()) {
+          pages.put(uuid, properties.getProperty(name));
+        }
+      }
     }
     return pages;
+  }
+
+  private static PageRepository createRepository(Properties properties) {
+    if (properties != null) {
+      final String databaseUrl = properties.getProperty("db.url");
+      if (databaseUrl != null && !databaseUrl.isBlank()) {
+        final String user = properties.getProperty("db.user");
+        final String password = properties.getProperty("db.password");
+        return new DatabasePageRepository(databaseUrl, user, password);
+      }
+    }
+
+    final Map<String, String> pages = extractPages(properties);
+    if (pages.isEmpty()) {
+      pages.putAll(defaultPages());
+    }
+
+    return createInMemoryRepository(pages);
+  }
+
+  private static PageRepository createInMemoryRepository(Map<String, String> pages) {
+    return new InMemoryPageRepository(pages);
+  }
+
+  private static Map<String, String> defaultPages() {
+    final Map<String, String> defaults = new LinkedHashMap<>();
+    defaults.put("/", DEFAULT_PAGE);
+    defaults.put("index.html", DEFAULT_PAGE);
+    return defaults;
+  }
+
+  private static String extractWelcomePage(Properties properties) {
+    if (properties == null) {
+      return DEFAULT_PAGE;
+    }
+
+    final String value = properties.getProperty("welcome.page");
+    return value != null && !value.isBlank() ? value : DEFAULT_PAGE;
+  }
+
+  private static int parsePort(Properties properties) {
+    if (properties == null) {
+      return DEFAULT_PORT;
+    }
+
+    final String value = properties.getProperty("port");
+    if (value == null) {
+      return DEFAULT_PORT;
+    }
+
+    try {
+      final int port = Integer.parseInt(value.trim());
+      return port > 0 ? port : DEFAULT_PORT;
+    } catch (NumberFormatException ex) {
+      return DEFAULT_PORT;
+    }
+  }
+
+  private static int parseWorkerThreads(Properties properties) {
+    if (properties == null) {
+      return DEFAULT_POOL_SIZE;
+    }
+
+    final String value = properties.getProperty("numClients");
+    if (value == null) {
+      return DEFAULT_POOL_SIZE;
+    }
+
+    try {
+      final int parsed = Integer.parseInt(value.trim());
+      return parsed > 0 ? parsed : DEFAULT_POOL_SIZE;
+    } catch (NumberFormatException ex) {
+      return DEFAULT_POOL_SIZE;
+    }
   }
 }
