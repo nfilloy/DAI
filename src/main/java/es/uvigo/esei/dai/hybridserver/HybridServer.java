@@ -27,16 +27,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import es.uvigo.esei.dai.hybridserver.http.HTTPHeaders;
 import es.uvigo.esei.dai.hybridserver.http.HTTPParseException;
 import es.uvigo.esei.dai.hybridserver.http.HTTPRequest;
+import es.uvigo.esei.dai.hybridserver.http.HTTPRequestMethod;
 import es.uvigo.esei.dai.hybridserver.http.HTTPResponse;
 import es.uvigo.esei.dai.hybridserver.http.HTTPResponseStatus;
 import es.uvigo.esei.dai.hybridserver.http.MIME;
 
 public class HybridServer implements AutoCloseable {
   private static final int SERVICE_PORT = 8888;
+  private static final int DEFAULT_POOL_SIZE = Math.max(1, Runtime.getRuntime().availableProcessors());
+  private static final String HTML_RESOURCE = "html";
   private static final String DEFAULT_PAGE = "<!DOCTYPE html>\n"
     + "<html lang=\"es\">\n"
     + "  <head>\n"
@@ -49,29 +55,30 @@ public class HybridServer implements AutoCloseable {
     + "  </body>\n"
     + "</html>\n";
 
-  private final Map<String, String> pages;
-  private final String responseBody;
+  private final PageRepository pageRepository;
+  private final String welcomePage;
+  private final int workerThreads;
 
+  private ExecutorService executor;
   private Thread serverThread;
-  private boolean stop;
+  private volatile boolean stop;
 
   public HybridServer() {
-    this(createDefaultPages());
+    this(Map.of());
   }
 
   public HybridServer(Map<String, String> pages) {
-    this.pages = new LinkedHashMap<>();
-    if (pages != null) {
-      this.pages.putAll(pages);
-    }
-    if (this.pages.isEmpty()) {
-      this.pages.put("/", DEFAULT_PAGE);
-    }
-    this.responseBody = selectDefaultPage(this.pages);
+    this(DEFAULT_PAGE, pages, DEFAULT_POOL_SIZE);
   }
 
   public HybridServer(Properties properties) {
-    this(propertiesToMap(properties));
+    this(DEFAULT_PAGE, extractPages(properties), DEFAULT_POOL_SIZE);
+  }
+
+  private HybridServer(String welcomePage, Map<String, String> pages, int workerThreads) {
+    this.welcomePage = welcomePage != null ? welcomePage : DEFAULT_PAGE;
+    this.pageRepository = new PageRepository(pages);
+    this.workerThreads = Math.max(1, workerThreads);
   }
 
   public int getPort() {
@@ -79,101 +86,173 @@ public class HybridServer implements AutoCloseable {
   }
 
   public void start() {
-    this.serverThread = new Thread() {
-      @Override
-      public void run() {
-        try (final ServerSocket serverSocket = new ServerSocket(SERVICE_PORT)) {
-          while (true) {
-            try (Socket socket = serverSocket.accept()) {
-              if (stop)
-                break;
-
-              handleClient(socket);
-            }
-          }
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      }
-    };
+    if (this.executor != null) {
+      throw new IllegalStateException("Server already started");
+    }
 
     this.stop = false;
+    this.executor = Executors.newFixedThreadPool(this.workerThreads);
+    this.serverThread = new Thread(() -> {
+      try (ServerSocket serverSocket = new ServerSocket(SERVICE_PORT)) {
+        while (true) {
+          final Socket socket = serverSocket.accept();
+          if (stop) {
+            socket.close();
+            break;
+          }
+
+          this.executor.execute(() -> this.processClient(socket));
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }, "HybridServer-Acceptor");
+
     this.serverThread.start();
   }
 
-  private void handleClient(Socket socket) throws IOException {
-    HTTPResponse response = createErrorResponse(HTTPResponseStatus.S400, "La peticion no es valida");
+  private void processClient(Socket socket) {
+    try (Socket client = socket;
+      InputStreamReader reader = new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8);
+      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream(), StandardCharsets.UTF_8))) {
 
-    try {
-      final HTTPRequest request = new HTTPRequest(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-      response = createOkResponse(request.getHttpVersion());
-    } catch (HTTPParseException e) {
-      // keep default error response when parsing fails
-    }
+      HTTPResponse response;
 
-    try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+      try {
+        final HTTPRequest request = new HTTPRequest(reader);
+        response = this.handleRequest(request);
+      } catch (HTTPParseException e) {
+        response = createErrorResponse(HTTPHeaders.HTTP_1_1.getHeader(), HTTPResponseStatus.S400, "La peticion no es valida");
+      } catch (Exception unexpected) {
+        response = createErrorResponse(HTTPHeaders.HTTP_1_1.getHeader(), HTTPResponseStatus.S500, "Error interno del servidor");
+        unexpected.printStackTrace();
+      }
+
       response.print(writer);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
 
-  private HTTPResponse createOkResponse(String httpVersion) {
-    final HTTPResponse response = new HTTPResponse();
-    response.setVersion(httpVersion);
-    response.setStatus(HTTPResponseStatus.S200);
-    response.setContent(this.responseBody);
-    response.putParameter(HTTPHeaders.CONNECTION.getHeader(), "close");
-    response.putParameter(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime());
-    return response;
+  private HTTPResponse handleRequest(HTTPRequest request) {
+    return switch (request.getMethod()) {
+      case GET -> handleGet(request);
+      case POST -> handlePost(request);
+      case DELETE -> handleDelete(request);
+      default -> createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S405, "Metodo no soportado");
+    };
   }
 
-  private HTTPResponse createErrorResponse(HTTPResponseStatus status, String message) {
+  private HTTPResponse handleGet(HTTPRequest request) {
+    final String[] path = request.getResourcePath();
+    if (path.length == 0) {
+      return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, this.welcomePage);
+    }
+
+    if (path.length == 1 && HTML_RESOURCE.equalsIgnoreCase(path[0])) {
+      final String uuid = request.getResourceParameters().get("uuid");
+      if (uuid == null || uuid.isBlank()) {
+        return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, renderPageList());
+      }
+
+      final String page = this.pageRepository.getPage(uuid);
+      if (page == null) {
+        return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S404, "La pagina solicitada no existe");
+      }
+
+      return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, page);
+    }
+
+    return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Recurso no soportado");
+  }
+
+  private HTTPResponse handlePost(HTTPRequest request) {
+    final String[] path = request.getResourcePath();
+    if (path.length != 1 || !HTML_RESOURCE.equalsIgnoreCase(path[0])) {
+      return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Recurso no soportado");
+    }
+
+    final String content = request.getResourceParameters().get("html");
+    if (content == null || content.isBlank()) {
+      return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Contenido invalido");
+    }
+
+    final String uuid = this.pageRepository.createPage(content);
+    final String body = new StringBuilder()
+      .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>Pagina almacenada</title></head><body>")
+      .append("<p>La pagina se ha almacenado correctamente.</p>")
+      .append("<p><a href=\"html?uuid=").append(uuid).append("\">")
+      .append(uuid).append("</a></p>")
+      .append("</body></html>")
+      .toString();
+
+    return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, body);
+  }
+
+  private HTTPResponse handleDelete(HTTPRequest request) {
+    final String[] path = request.getResourcePath();
+    if (path.length != 1 || !HTML_RESOURCE.equalsIgnoreCase(path[0])) {
+      return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Recurso no soportado");
+    }
+
+    final String uuid = request.getResourceParameters().get("uuid");
+    if (uuid == null || uuid.isBlank()) {
+      return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Identificador invalido");
+    }
+
+    if (!this.pageRepository.deletePage(uuid)) {
+      return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S404, "La pagina solicitada no existe");
+    }
+
+    final String body = "<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>Pagina eliminada</title></head><body><p>La pagina se ha eliminado.</p></body></html>";
+    return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, body);
+  }
+
+  private String renderPageList() {
+    final StringBuilder sb = new StringBuilder()
+      .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>Paginas disponibles</title></head><body>")
+      .append("<h1>Paginas disponibles</h1><ul>");
+
+    for (String uuid : this.pageRepository.listUuids()) {
+      sb.append("<li><a href=\"html?uuid=").append(uuid).append("\">").append(uuid).append("</a></li>");
+    }
+
+    return sb.append("</ul></body></html>").toString();
+  }
+
+  private static HTTPResponse createHtmlResponse(String version, HTTPResponseStatus status, String content) {
     final HTTPResponse response = new HTTPResponse();
+    response.setVersion(version != null ? version : HTTPHeaders.HTTP_1_1.getHeader());
     response.setStatus(status);
-    response.setContent("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>" + status.getStatus()
-      + "</title></head><body><h1>" + status.getCode() + " " + status.getStatus() + "</h1><p>"
-      + message + "</p></body></html>\n");
+    response.setContent(content);
     response.putParameter(HTTPHeaders.CONNECTION.getHeader(), "close");
-    response.putParameter(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime());
+    if (content != null) {
+      response.putParameter(HTTPHeaders.CONTENT_TYPE.getHeader(), MIME.TEXT_HTML.getMime());
+    }
     return response;
   }
 
-  private static Map<String, String> createDefaultPages() {
-    final Map<String, String> defaults = new LinkedHashMap<>();
-    defaults.put("/", DEFAULT_PAGE);
-    defaults.put("index.html", DEFAULT_PAGE);
-    return defaults;
-  }
+  private static HTTPResponse createErrorResponse(String version, HTTPResponseStatus status, String message) {
+    final String body = new StringBuilder()
+      .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>")
+      .append(status.getStatus()).append("</title></head><body><h1>")
+      .append(status.getCode()).append(' ').append(status.getStatus()).append("</h1><p>")
+      .append(message).append("</p></body></html>")
+      .toString();
 
-  private static String selectDefaultPage(Map<String, String> pages) {
-    if (pages.containsKey("/")) {
-      return pages.get("/");
-    }
-
-    for (Map.Entry<String, String> entry : pages.entrySet()) {
-      if (entry.getValue() != null) {
-        return entry.getValue();
-      }
-    }
-
-    return DEFAULT_PAGE;
-  }
-
-  private static Map<String, String> propertiesToMap(Properties properties) {
-    final Map<String, String> map = new LinkedHashMap<>();
-    if (properties != null) {
-      for (String name : properties.stringPropertyNames()) {
-        map.put(name, properties.getProperty(name));
-      }
-    }
-    return map;
+    return createHtmlResponse(version, status, body);
   }
 
   @Override
   public void close() {
+    if (this.serverThread == null) {
+      return;
+    }
+
     this.stop = true;
 
     try (Socket socket = new Socket("localhost", SERVICE_PORT)) {
-      // Esta conexión se hace, simplemente, para "despertar" el hilo servidor
+      // Despierta al hilo aceptador
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -181,9 +260,42 @@ public class HybridServer implements AutoCloseable {
     try {
       this.serverThread.join();
     } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
 
     this.serverThread = null;
+    shutdownExecutor();
+  }
+
+  private void shutdownExecutor() {
+    if (this.executor == null) {
+      return;
+    }
+
+    this.executor.shutdown();
+    try {
+      if (!this.executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        this.executor.shutdownNow();
+        this.executor.awaitTermination(5, TimeUnit.SECONDS);
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      this.executor.shutdownNow();
+    }
+
+    this.executor = null;
+  }
+
+  private static Map<String, String> extractPages(Properties properties) {
+    if (properties == null) {
+      return Map.of();
+    }
+
+    final Map<String, String> pages = new LinkedHashMap<>();
+    for (String name : properties.stringPropertyNames()) {
+      pages.put(name, properties.getProperty(name));
+    }
+    return pages;
   }
 }
