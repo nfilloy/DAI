@@ -1,0 +1,18 @@
+## Example configuration for running the server with MySQL (Step 3)
+
+# TCP port for the HTTP server
+port=8888
+
+# Number of worker threads for the pool
+numClients=50
+
+# Welcome page (optional override)
+welcome.page=<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Hybrid Server</title></head><body><h1>Hybrid Server</h1><p>Bienvenido a Hybrid Server.</p></body></html>
+
+# Preload example pages (optional)
+# page.11111111-1111-1111-1111-111111111111=<html><body>Demo</body></html>
+
+# Database configuration (enables DatabasePageRepository)
+db.url=jdbc:mysql://localhost/hstestdb
+db.user=hsdb
+db.password=hsdbpass
