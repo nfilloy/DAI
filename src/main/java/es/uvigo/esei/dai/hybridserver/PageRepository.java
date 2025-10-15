@@ -1,13 +1,8 @@
 package es.uvigo.esei.dai.hybridserver;
 
-import java.util.List;
+import es.uvigo.esei.dai.hybridserver.http.HTTPRequest;
+import es.uvigo.esei.dai.hybridserver.http.HTTPResponse;
 
 interface PageRepository {
-  String getPage(String uuid);
-
-  List<String> listUuids();
-
-  String createPage(String content);
-
-  boolean deletePage(String uuid);
+  HTTPResponse handle(HTTPRequest request, String welcomePage);
 }

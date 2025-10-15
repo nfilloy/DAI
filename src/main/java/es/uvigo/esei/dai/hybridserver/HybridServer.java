@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class HybridServer implements AutoCloseable {
   private static final int DEFAULT_PORT = 8888;
@@ -45,14 +46,14 @@ public class HybridServer implements AutoCloseable {
   private final int port;
   private final int workerThreads;
   private final String welcomePage;
-  private final PageRepository repository;
+  private final Supplier<PageRepository> repositoryFactory;
 
   private Thread serverThread;
   private ExecutorService executor;
   private volatile boolean stop;
 
   public HybridServer() {
-    this(DEFAULT_PORT, DEFAULT_POOL_SIZE, DEFAULT_PAGE, new InMemoryPageRepository(defaultPages()));
+    this(DEFAULT_PORT, DEFAULT_POOL_SIZE, DEFAULT_PAGE, createInMemorySupplier(defaultPages()));
   }
 
   public HybridServer(Map<String, String> pages) {
@@ -60,7 +61,7 @@ public class HybridServer implements AutoCloseable {
       DEFAULT_PORT,
       DEFAULT_POOL_SIZE,
       DEFAULT_PAGE,
-      new InMemoryPageRepository(pages == null || pages.isEmpty() ? defaultPages() : new LinkedHashMap<>(pages))
+      createInMemorySupplier(pages == null || pages.isEmpty() ? defaultPages() : new LinkedHashMap<>(pages))
     );
   }
 
@@ -73,11 +74,11 @@ public class HybridServer implements AutoCloseable {
     );
   }
 
-  private HybridServer(int port, int workerThreads, String welcomePage, PageRepository repository) {
+  private HybridServer(int port, int workerThreads, String welcomePage, Supplier<PageRepository> repositoryFactory) {
     this.port = port;
     this.workerThreads = Math.max(1, workerThreads);
     this.welcomePage = welcomePage != null ? welcomePage : DEFAULT_PAGE;
-    this.repository = repository;
+    this.repositoryFactory = repositoryFactory;
   }
 
   public int getPort() {
@@ -100,7 +101,7 @@ public class HybridServer implements AutoCloseable {
             break;
           }
 
-          this.executor.execute(new ClientHandler(socket, this.repository, this.welcomePage));
+          this.executor.execute(new ClientHandler(socket, this.repositoryFactory, this.welcomePage));
         }
       } catch (IOException e) {
         e.printStackTrace();
@@ -202,13 +203,13 @@ public class HybridServer implements AutoCloseable {
     }
   }
 
-  private static PageRepository createRepository(Properties properties) {
+  private static Supplier<PageRepository> createRepository(Properties properties) {
     if (properties != null) {
       final String databaseUrl = properties.getProperty("db.url");
       if (databaseUrl != null && !databaseUrl.isBlank()) {
         final String user = properties.getProperty("db.user");
         final String password = properties.getProperty("db.password");
-        return new DatabasePageRepository(databaseUrl, user, password);
+        return () -> new DatabasePageRepository(databaseUrl, user, password);
       }
     }
 
@@ -217,7 +218,12 @@ public class HybridServer implements AutoCloseable {
       pages.putAll(defaultPages());
     }
 
-    return new InMemoryPageRepository(pages);
+    return createInMemorySupplier(pages);
+  }
+
+  private static Supplier<PageRepository> createInMemorySupplier(Map<String, String> pages) {
+    final InMemoryPageRepository repository = new InMemoryPageRepository(pages);
+    return () -> repository;
   }
 
   private static Map<String, String> extractPages(Properties properties) {
