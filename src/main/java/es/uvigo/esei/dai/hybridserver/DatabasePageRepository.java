@@ -98,7 +98,7 @@ class DatabasePageRepository implements PageRepository {
   }
 
   private Connection openConnection() throws SQLException {
-    if (this.user != null) {
+    if (this.user != null && !this.user.isBlank()) {
       return DriverManager.getConnection(this.url, this.user, this.password);
     }
 

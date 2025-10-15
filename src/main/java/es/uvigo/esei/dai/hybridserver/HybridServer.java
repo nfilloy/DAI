@@ -342,8 +342,8 @@ public class HybridServer implements AutoCloseable {
 
   private static Map<String, String> defaultPages() {
     final Map<String, String> defaults = new LinkedHashMap<>();
-    defaults.put("/", DEFAULT_PAGE);
-    defaults.put("index.html", DEFAULT_PAGE);
+    defaults.put("12345", "pagina 12345");
+    defaults.put("9898", "paguina 9898");
     return defaults;
   }
 
