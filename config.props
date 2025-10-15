@@ -1,0 +1,5 @@
+numClients=50
+port=8888
+db.url=jdbc:mysql://localhost/hstestdb
+db.user=hsdb
+db.password=hsdbpass

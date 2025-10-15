@@ -17,58 +17,202 @@
  */
 package es.uvigo.esei.dai.hybridserver.http;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class HTTPRequest {
+  private static final Pattern HTTP_VERSION_PATTERN = Pattern.compile("HTTP/\\d\\.\\d");
+  private final HTTPRequestMethod method;
+  private final String resourceChain;
+  private final String[] resourcePath;
+  private final String resourceName;
+  private final Map<String, String> resourceParameters;
+  private final String httpVersion;
+  private final Map<String, String> headerParameters;
+  private final String content;
+  private final int contentLength;
+
   public HTTPRequest(Reader reader) throws IOException, HTTPParseException {
-    // TODO Completar. Cualquier error en el procesado debe lanzar una HTTPParseException
+    if (reader == null) {
+      throw new HTTPParseException("Reader cannot be null");
+    }
+
+    final BufferedReader bufferedReader = reader instanceof BufferedReader
+      ? (BufferedReader) reader
+      : new BufferedReader(reader);
+
+    final String requestLine = bufferedReader.readLine();
+    if (requestLine == null || requestLine.isEmpty()) {
+      throw new HTTPParseException("Empty request line");
+    }
+
+    final String[] parts = requestLine.split("\\s+");
+    if (parts.length < 3) {
+      throw new HTTPParseException("Invalid request line: " + requestLine);
+    }
+
+    try {
+      this.method = HTTPRequestMethod.valueOf(parts[0]);
+    } catch (IllegalArgumentException ex) {
+      throw new HTTPParseException("Unsupported HTTP method: " + parts[0], ex);
+    }
+
+    this.resourceChain = parts[1];
+    this.httpVersion = parts[2];
+    if (!HTTP_VERSION_PATTERN.matcher(this.httpVersion).matches()) {
+      throw new HTTPParseException("Unsupported HTTP version: " + this.httpVersion);
+    }
+
+    final Map<String, String> headers = new LinkedHashMap<>();
+    String line;
+    while ((line = bufferedReader.readLine()) != null && !line.isEmpty()) {
+      final int separatorIndex = line.indexOf(':');
+      if (separatorIndex <= 0) {
+        throw new HTTPParseException("Malformed header line: " + line);
+      }
+
+      final String name = line.substring(0, separatorIndex).trim();
+      final String value = line.substring(separatorIndex + 1).trim();
+      headers.put(name, value);
+    }
+
+    final int length = parseContentLength(headers);
+    this.contentLength = length;
+
+    String body = null;
+    if (length > 0) {
+      final char[] buffer = new char[length];
+      int read = 0;
+      while (read < length) {
+        final int n = bufferedReader.read(buffer, read, length - read);
+        if (n == -1) {
+          throw new HTTPParseException("Unexpected end of stream while reading content");
+        }
+        read += n;
+      }
+      body = new String(buffer);
+    }
+
+    String decodedBody = null;
+    if (body != null && isFormUrlEncoded(headers)) {
+      decodedBody = URLDecoder.decode(body, StandardCharsets.UTF_8);
+    }
+
+    this.content = decodedBody != null ? decodedBody : body;
+
+    final String[] resourceParts = this.resourceChain.split("\\?", 2);
+    final String rawPath = resourceParts[0];
+    final String queryString = resourceParts.length > 1 ? resourceParts[1] : "";
+
+    final String[] segments = Arrays.stream(rawPath.split("/"))
+      .filter(segment -> !segment.isEmpty())
+      .toArray(String[]::new);
+    this.resourcePath = segments;
+    this.resourceName = segments.length > 0 ? String.join("/", segments) : "";
+
+    final Map<String, String> queryParameters = new LinkedHashMap<>();
+    parseParameters(queryString, queryParameters);
+
+    if (this.method == HTTPRequestMethod.POST && body != null) {
+      parseParameters(body, queryParameters);
+    }
+
+    this.resourceParameters = Collections.unmodifiableMap(queryParameters);
+    this.headerParameters = Collections.unmodifiableMap(new LinkedHashMap<>(headers));
   }
 
   public HTTPRequestMethod getMethod() {
-    // TODO Completar
-    return null;
+    return this.method;
   }
 
   public String getResourceChain() {
-    // TODO Completar
-    return null;
+    return this.resourceChain;
   }
 
   public String[] getResourcePath() {
-    // TODO Completar
-    return null;
+    return Arrays.copyOf(this.resourcePath, this.resourcePath.length);
   }
 
   public String getResourceName() {
-    // TODO Completar
-    return null;
+    return this.resourceName;
   }
 
   public Map<String, String> getResourceParameters() {
-    // TODO Completar
-    return null;
+    return this.resourceParameters;
   }
 
   public String getHttpVersion() {
-    // TODO Completar
-    return null;
+    return this.httpVersion;
   }
 
   public Map<String, String> getHeaderParameters() {
-    // TODO Completar
-    return null;
+    return this.headerParameters;
   }
 
   public String getContent() {
-    // TODO Completar
-    return null;
+    return this.content;
   }
 
   public int getContentLength() {
-    // TODO Completar
-    return -1;
+    return this.contentLength;
+  }
+
+  private static int parseContentLength(Map<String, String> headers) throws HTTPParseException {
+    for (Map.Entry<String, String> entry : headers.entrySet()) {
+      if (HTTPHeaders.CONTENT_LENGTH.getHeader().equalsIgnoreCase(entry.getKey())) {
+        try {
+          return Integer.parseInt(entry.getValue());
+        } catch (NumberFormatException ex) {
+          throw new HTTPParseException("Invalid Content-Length value", ex);
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  private static boolean isFormUrlEncoded(Map<String, String> headers) {
+    for (Map.Entry<String, String> entry : headers.entrySet()) {
+      if (HTTPHeaders.CONTENT_TYPE.getHeader().equalsIgnoreCase(entry.getKey())) {
+        return entry.getValue().toLowerCase().startsWith(MIME.FORM.getMime());
+      }
+    }
+
+    return false;
+  }
+
+  private static void parseParameters(String raw, Map<String, String> target) throws HTTPParseException {
+    if (raw == null || raw.isEmpty()) {
+      return;
+    }
+
+    final String[] pairs = raw.split("&");
+    for (String pair : pairs) {
+      if (pair.isEmpty()) {
+        continue;
+      }
+
+      final String[] nv = pair.split("=", 2);
+      final String name = urlDecode(nv[0]);
+      final String value = nv.length > 1 ? urlDecode(nv[1]) : "";
+      target.put(name, value);
+    }
+  }
+
+  private static String urlDecode(String value) throws HTTPParseException {
+    try {
+      return URLDecoder.decode(value, StandardCharsets.UTF_8);
+    } catch (IllegalArgumentException ex) {
+      throw new HTTPParseException("Unable to decode parameter", ex);
+    }
   }
 
   @Override

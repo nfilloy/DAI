@@ -17,19 +17,33 @@
  */
 package es.uvigo.esei.dai.hybridserver;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class Launcher {
   public static void main(String[] args) {
-    try (HybridServer server = new HybridServer()) {
+    Properties properties = null;
+
+    if (args.length > 0) {
+      final String configPath = args[0];
+      try (InputStream input = new FileInputStream(configPath)) {
+        properties = new Properties();
+        properties.load(input);
+      } catch (IOException e) {
+        System.err.println("No se pudo cargar el fichero de configuracion '" + configPath + "'. Se usara la configuracion por defecto.");
+        properties = null;
+      }
+    }
+
+    try (HybridServer server = properties != null ? new HybridServer(properties) : new HybridServer()) {
       server.start();
       System.out.println("Servidor escuchando en http://localhost:" + server.getPort());
       System.out.println("Pulsa ENTER para parar...");
-      System.in.read(); // bloquea hasta ENTER
-    }
-    catch(IOException e){
+      System.in.read();
+    } catch (IOException e) {
       e.printStackTrace();
-      
     }
   }
 }
