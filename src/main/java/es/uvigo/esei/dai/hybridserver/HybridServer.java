@@ -320,10 +320,10 @@ public class HybridServer implements AutoCloseable {
 
   private static PageRepository createRepository(Properties properties) {
     if (properties != null) {
-      final String databaseUrl = properties.getProperty("db.url");
+      final String databaseUrl = properties.getProperty("jdbc:mysql://localhost/hstestdb");
       if (databaseUrl != null && !databaseUrl.isBlank()) {
-        final String user = properties.getProperty("db.user");
-        final String password = properties.getProperty("db.password");
+        final String user = properties.getProperty("root");
+        final String password = properties.getProperty("1234");
         return new DatabasePageRepository(databaseUrl, user, password);
       }
     }
