@@ -40,6 +40,7 @@ public class HybridServer implements AutoCloseable {
     + "  <body>\n"
     + "    <h1>Hybrid Server</h1>\n"
     + "    <p>Bienvenido a Hybrid Server.</p>\n"
+    + "    <p>Nicolas Filloy Montesino y Jose Carlos Peña Otero.</p>\n"
     + "  </body>\n"
     + "</html>\n";
 
