@@ -45,7 +45,7 @@ class DatabasePageRepository implements PageRepository {
       case DELETE:
         return handleDelete(request);
       default:
-        return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S405, "Metodo no soportado");
+        return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Metodo no soportado");
     }
   }
 
@@ -55,7 +55,7 @@ class DatabasePageRepository implements PageRepository {
       return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, welcomePage);
     }
 
-    if (path.length == 1 && "html".equalsIgnoreCase(path[0])) {
+    if (path.length == 1 && "html".equals(path[0])) {
       final String uuid = request.getResourceParameters().get("uuid");
       if (uuid == null || uuid.isBlank()) {
         return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, renderPageList());
@@ -74,7 +74,7 @@ class DatabasePageRepository implements PageRepository {
 
   private HTTPResponse handlePost(HTTPRequest request) {
     final String[] path = request.getResourcePath();
-    if (path.length != 1 || !"html".equalsIgnoreCase(path[0])) {
+    if (path.length != 1 || !"html".equals(path[0])) {
       return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Recurso no soportado");
     }
 
@@ -97,7 +97,7 @@ class DatabasePageRepository implements PageRepository {
 
   private HTTPResponse handleDelete(HTTPRequest request) {
     final String[] path = request.getResourcePath();
-    if (path.length != 1 || !"html".equalsIgnoreCase(path[0])) {
+    if (path.length != 1 || !"html".equals(path[0])) {
       return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Recurso no soportado");
     }
 
@@ -160,26 +160,17 @@ class DatabasePageRepository implements PageRepository {
 
   private String insertPage(String content) {
     final String sql = "INSERT INTO " + TABLE_NAME + " (uuid, content) VALUES (?, ?)";
+    final String uuid = UUID.randomUUID().toString();
 
-    for (int i = 0; i < 5; i++) {
-      final String uuid = UUID.randomUUID().toString();
+    try (Connection connection = openConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
+      stmt.setString(1, uuid);
+      stmt.setString(2, content);
+      stmt.executeUpdate();
 
-      try (Connection connection = openConnection(); PreparedStatement stmt = connection.prepareStatement(sql)) {
-        stmt.setString(1, uuid);
-        stmt.setString(2, content);
-        stmt.executeUpdate();
-
-        return uuid;
-      } catch (SQLException e) {
-        if (isDuplicateKey(e)) {
-          continue;
-        }
-
-        throw new RuntimeException("Failed to create page", e);
-      }
+      return uuid;
+    } catch (SQLException e) {
+      throw new RuntimeException("Failed to create page", e);
     }
-
-    throw new RuntimeException("Unable to generate unique UUID for page");
   }
 
   private boolean removePage(String uuid) {

@@ -41,7 +41,7 @@ class InMemoryPageRepository implements PageRepository {
       case DELETE:
         return handleDelete(request);
       default:
-        return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S405, "Metodo no soportado");
+        return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Metodo no soportado");
     }
   }
 
@@ -51,7 +51,7 @@ class InMemoryPageRepository implements PageRepository {
       return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, welcomePage);
     }
 
-    if (path.length == 1 && "html".equalsIgnoreCase(path[0])) {
+    if (path.length == 1 && "html".equals(path[0])) {
       final String uuid = request.getResourceParameters().get("uuid");
       if (uuid == null || uuid.isBlank()) {
         return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, renderPageList());
@@ -70,7 +70,7 @@ class InMemoryPageRepository implements PageRepository {
 
   private HTTPResponse handlePost(HTTPRequest request) {
     final String[] path = request.getResourcePath();
-    if (path.length != 1 || !"html".equalsIgnoreCase(path[0])) {
+    if (path.length != 1 || !"html".equals(path[0])) {
       return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Recurso no soportado");
     }
 
@@ -93,7 +93,7 @@ class InMemoryPageRepository implements PageRepository {
 
   private HTTPResponse handleDelete(HTTPRequest request) {
     final String[] path = request.getResourcePath();
-    if (path.length != 1 || !"html".equalsIgnoreCase(path[0])) {
+    if (path.length != 1 || !"html".equals(path[0])) {
       return createErrorResponse(request.getHttpVersion(), HTTPResponseStatus.S400, "Recurso no soportado");
     }
 
@@ -133,11 +133,7 @@ class InMemoryPageRepository implements PageRepository {
 
   private String createPage(String content) {
     synchronized (this.pages) {
-      String uuid;
-      do {
-        uuid = UUID.randomUUID().toString();
-      } while (this.pages.containsKey(uuid));
-
+      final String uuid = UUID.randomUUID().toString();
       this.pages.put(uuid, content);
       return uuid;
     }

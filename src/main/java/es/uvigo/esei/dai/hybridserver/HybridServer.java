@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 
 public class HybridServer implements AutoCloseable {
   private static final int DEFAULT_PORT = 8888;
-  private static final int DEFAULT_POOL_SIZE = Math.max(1, Runtime.getRuntime().availableProcessors());
+  private static final int DEFAULT_POOL_SIZE = 50;
   private static final String DEFAULT_PAGE = "<!DOCTYPE html>\n"
     + "<html lang=\"es\">\n"
     + "  <head>\n"
@@ -140,9 +140,9 @@ public class HybridServer implements AutoCloseable {
 
     this.executor.shutdown();
     try {
-      if (!this.executor.awaitTermination(5, TimeUnit.SECONDS)) {
+      if (!this.executor.awaitTermination(60, TimeUnit.SECONDS)) {
         this.executor.shutdownNow();
-        this.executor.awaitTermination(5, TimeUnit.SECONDS);
+        this.executor.awaitTermination(60, TimeUnit.SECONDS);
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -214,12 +214,7 @@ public class HybridServer implements AutoCloseable {
       }
     }
 
-    final Map<String, String> pages = extractPages(properties);
-    if (pages.isEmpty()) {
-      pages.putAll(defaultPages());
-    }
-
-    return createInMemorySupplier(pages);
+    return createInMemorySupplier(defaultPages());
   }
 
   private static Supplier<PageRepository> createInMemorySupplier(Map<String, String> pages) {

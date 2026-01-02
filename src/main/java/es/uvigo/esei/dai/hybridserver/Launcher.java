@@ -24,6 +24,12 @@ import java.util.Properties;
 
 public class Launcher {
   public static void main(String[] args) {
+    if (args.length > 1) {
+      System.err.println("Error: Demasiados parametros.");
+      System.err.println("Uso: java es.uvigo.esei.dai.hybridserver.Launcher [archivo_configuracion]");
+      System.exit(1);
+    }
+
     Properties properties = null;
 
     if (args.length > 0) {
