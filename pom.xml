@@ -184,7 +184,7 @@
 					<testFailureIgnore>true</testFailureIgnore>
 					<includes>
 						<include>
-							es/uvigo/esei/dai/hybridserver/HybridServerFirstReleaseTestSuite.java
+							es/uvigo/esei/dai/hybridserver/HybridServerSecondReleaseTestSuite.java
 						</include>
 					</includes>
 				</configuration>
@@ -213,11 +213,11 @@
 						</goals>
 						<configuration>
 							<appendAssemblyId>false</appendAssemblyId>
-							<finalName>hybrid-server-${group.name}.r1</finalName>
+							<finalName>hybrid-server-${group.name}.r2</finalName>
 							<outputDirectory>${project.basedir}</outputDirectory>
 							<descriptors>
 								<descriptor>
-									src/main/assembly/assembly-first-release.xml
+									src/main/assembly/assembly-second-release.xml
 								</descriptor>
 							</descriptors>
 						</configuration>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!ELEMENT dataset (hstestdb1.HTML+,hstestdb1.XML+,hstestdb1.XSD+,hstestdb1.XSLT+)>
+<!ELEMENT hstestdb1.HTML EMPTY>
+<!ATTLIST hstestdb1.HTML
+	uuid CDATA #REQUIRED
+	content CDATA #REQUIRED
+>
+<!ELEMENT hstestdb1.XML EMPTY>
+<!ATTLIST hstestdb1.XML
+	uuid CDATA #REQUIRED
+	content CDATA #REQUIRED
+>
+<!ELEMENT hstestdb1.XSD EMPTY>
+<!ATTLIST hstestdb1.XSD
+	uuid CDATA #REQUIRED
+	content CDATA #REQUIRED
+>
+<!ELEMENT hstestdb1.XSLT EMPTY>
+<!ATTLIST hstestdb1.XSLT
+	uuid CDATA #REQUIRED
+	xsd CDATA #REQUIRED
+	content CDATA #REQUIRED
+>

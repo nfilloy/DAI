@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<tns:collection xmlns:tns="http://www.esei.uvigo.es/dai/proyecto"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.esei.uvigo.es/dai/proyecto sample2.xsd ">
+	<disc1 year="1972">
+		<name>Live in Japan</name>
+		<genre>Hard Rock</genre>
+		<artist>Deep Purple</artist>
+	</disc1>
+	<disc1 year="1972">
+		<name>Led Zeppelin</name>
+		<genre>Hard Rock</genre>
+		<artist>Led Zeppelin</artist>
+	</disc1>
+	<disc1 year="1990">
+		<name>Shake Your Money Maker</name>
+		<genre>Southern Rock</genre>
+		<artist>The Black Crowes</artist>
+	</disc1>
+	
+	<movie1 year="1972">
+		<name>The Godfather</name>
+		<genre>Drama</genre>
+		<director>Francis Ford Coppola</director>
+	</movie1>
+	<movie1>
+		<name>Interstellar</name>
+		<genre>Adventure</genre>
+		<director>Christopher Nolan</director>
+	</movie1>
+	
+	<book1 year="1965">
+		<name>Dune</name>
+		<genre>Science Fiction</genre>
+		<author>Frank Herbert</author>
+		<pages>412</pages>
+	</book1>
+	<book1 year="1922">
+		<name>Siddhartha</name>
+		<genre>Novel</genre>
+		<author>Hermann Hesse</author>
+		<pages>152</pages>
+	</book1>
+</tns:collection>

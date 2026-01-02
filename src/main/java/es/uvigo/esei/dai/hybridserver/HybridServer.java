@@ -32,17 +32,17 @@ public class HybridServer implements AutoCloseable {
   private static final int DEFAULT_PORT = 8888;
   private static final int DEFAULT_POOL_SIZE = 50;
   private static final String DEFAULT_PAGE = "<!DOCTYPE html>\n"
-    + "<html lang=\"es\">\n"
-    + "  <head>\n"
-    + "    <meta charset=\"UTF-8\"/>\n"
-    + "    <title>Hybrid Server</title>\n"
-    + "  </head>\n"
-    + "  <body>\n"
-    + "    <h1>Hybrid Server</h1>\n"
-    + "    <p>Bienvenido a Hybrid Server.</p>\n"
-    + "    <p>Nicolas Filloy Montesino y Jose Carlos Peña Otero.</p>\n"
-    + "  </body>\n"
-    + "</html>\n";
+      + "<html lang=\"es\">\n"
+      + "  <head>\n"
+      + "    <meta charset=\"UTF-8\"/>\n"
+      + "    <title>Hybrid Server</title>\n"
+      + "  </head>\n"
+      + "  <body>\n"
+      + "    <h1>Hybrid Server</h1>\n"
+      + "    <p>Bienvenido a Hybrid Server.</p>\n"
+      + "    <p>Nicolas Filloy Montesino y Jose Carlos Peña Otero.</p>\n"
+      + "  </body>\n"
+      + "</html>\n";
 
   private final int port;
   private final int workerThreads;
@@ -59,20 +59,26 @@ public class HybridServer implements AutoCloseable {
 
   public HybridServer(Map<String, String> pages) {
     this(
-      DEFAULT_PORT,
-      DEFAULT_POOL_SIZE,
-      DEFAULT_PAGE,
-      createInMemorySupplier(pages == null || pages.isEmpty() ? defaultPages() : new LinkedHashMap<>(pages))
-    );
+        DEFAULT_PORT,
+        DEFAULT_POOL_SIZE,
+        DEFAULT_PAGE,
+        createInMemorySupplier(pages == null || pages.isEmpty() ? defaultPages() : new LinkedHashMap<>(pages)));
   }
 
   public HybridServer(Properties properties) {
     this(
-      parsePort(properties),
-      parseWorkerThreads(properties),
-      extractWelcomePage(properties),
-      createRepository(properties)
-    );
+        parsePort(properties),
+        parseWorkerThreads(properties),
+        extractWelcomePage(properties),
+        createRepository(properties));
+  }
+
+  public HybridServer(Configuration configuration) {
+    this(
+        configuration.getHttpPort(),
+        configuration.getNumClients(),
+        DEFAULT_PAGE,
+        createRepositoryFromConfiguration(configuration));
   }
 
   private HybridServer(int port, int workerThreads, String welcomePage, Supplier<PageRepository> repositoryFactory) {
@@ -212,6 +218,17 @@ public class HybridServer implements AutoCloseable {
         final String password = properties.getProperty("db.password");
         return () -> new DatabasePageRepository(databaseUrl, user, password);
       }
+    }
+
+    return createInMemorySupplier(defaultPages());
+  }
+
+  private static Supplier<PageRepository> createRepositoryFromConfiguration(Configuration configuration) {
+    final String databaseUrl = configuration.getDbURL();
+    if (databaseUrl != null && !databaseUrl.isBlank()) {
+      final String user = configuration.getDbUser();
+      final String password = configuration.getDbPassword();
+      return () -> new DatabasePageRepository(databaseUrl, user, password);
     }
 
     return createInMemorySupplier(defaultPages());

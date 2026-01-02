@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" 
+	targetNamespace="http://www.esei.uvigo.es/dai/proyecto"
+	xmlns:tns="http://www.esei.uvigo.es/dai/proyecto">
+	<element name="collection">
+		<complexType>
+			<sequence>
+				<element name="disc4" type="tns:disc4" minOccurs="0" maxOccurs="unbounded"/>
+				<element name="movie4" type="tns:movie4" minOccurs="0" maxOccurs="unbounded"/>
+				<element name="book4" type="tns:book4" minOccurs="0" maxOccurs="unbounded"/>
+			</sequence>
+		</complexType>
+	</element>
+
+    <complexType name="item">
+    	<sequence>
+    		<element name="name" type="string"/>
+    	</sequence>
+   		<attribute name="year" type="unsignedInt"/>
+    </complexType>
+
+    <complexType name="disc4">
+    	<complexContent>
+    		<extension base="tns:item">
+    			<sequence>
+    				<element name="genre" type="string"/>
+    				<element name="artist" type="string"/>
+    			</sequence>
+    		</extension>
+    	</complexContent>
+    </complexType>
+
+    <complexType name="movie4">
+    	<complexContent>
+    		<extension base="tns:item">
+    			<sequence>
+    				<element name="genre" type="string"/>
+    				<element name="director" type="string"/>
+    			</sequence>
+    		</extension>
+    	</complexContent>
+    </complexType>
+
+    <complexType name="book4">
+    	<complexContent>
+    		<extension base="tns:item">
+    			<sequence>
+    				<element name="genre" type="string"/>
+    				<element name="author" type="string"/>
+    				<element name="pages" type="unsignedInt"/>
+    			</sequence>
+    		</extension>
+    	</complexContent>
+    </complexType>
+</schema>

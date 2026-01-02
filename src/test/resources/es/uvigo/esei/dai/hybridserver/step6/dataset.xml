@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dataset SYSTEM "dataset.dtd" >
+<dataset>
+	<hstestdb.HTML uuid="6df1047e-cf19-4a83-8cf3-38f5e53f7725"
+		content="&lt;html&gt;&lt;body&gt;This is the html page 6df1047e-cf19-4a83-8cf3-38f5e53f7725.&lt;/body&gt;&lt;/html&gt;" />
+	<hstestdb.HTML uuid="79e01232-5ea4-41c8-9331-1c1880a1d3c2"
+		content="&lt;html&gt;&lt;body&gt;This is the html page 79e01232-5ea4-41c8-9331-1c1880a1d3c2.&lt;/body&gt;&lt;/html&gt;" />
+	<hstestdb.HTML uuid="a35b6c5e-22d6-4707-98b4-462482e26c9e"
+		content="&lt;html&gt;&lt;body&gt;This is the html page a35b6c5e-22d6-4707-98b4-462482e26c9e.&lt;/body&gt;&lt;/html&gt;" />
+	<hstestdb.HTML uuid="3aff2f9c-0c7f-4630-99ad-27a0cf1af137"
+		content="&lt;html&gt;&lt;body&gt;This is the html page 3aff2f9c-0c7f-4630-99ad-27a0cf1af137.&lt;/body&gt;&lt;/html&gt;" />
+	<hstestdb.HTML uuid="77ec1d68-84e1-40f4-be8e-066e02f4e373"
+		content="&lt;html&gt;&lt;body&gt;This is the html page 77ec1d68-84e1-40f4-be8e-066e02f4e373.&lt;/body&gt;&lt;/html&gt;" />
+		
+	<hstestdb.XML uuid="ddcab7d0-636c-11e4-8db3-685b35c84fb4"
+		content="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+
+&lt;people xmlns=&quot;http://www.esei.uvigo.es/dai/proyecto&quot; 
+		  xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+		  xsi:schemaLocation=&quot;http://www.esei.uvigo.es/dai/proyecto sample.xsd&quot;&gt;
+	&lt;person dni=&quot;123456&quot;&gt;&lt;name&gt;Pepe&lt;/name&gt;&lt;/person&gt;
+&lt;/people&gt;" />
+	<hstestdb.XML uuid="ea118888-6908-11e4-9620-685b35c84fb4"
+		content="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+
+&lt;tns:collection xmlns:tns=&quot;http://www.esei.uvigo.es/dai/proyecto&quot;
+	xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+	xsi:schemaLocation=&quot;http://www.esei.uvigo.es/dai/proyecto sample2.xsd &quot;&gt;
+	&lt;disc year=&quot;1972&quot;&gt;
+		&lt;name&gt;Live in Japan&lt;/name&gt;
+		&lt;genre&gt;Hard Rock&lt;/genre&gt;
+		&lt;artist&gt;Deep Purple&lt;/artist&gt;
+	&lt;/disc&gt;
+	&lt;disc year=&quot;1972&quot;&gt;
+		&lt;name&gt;Led Zeppelin&lt;/name&gt;
+		&lt;genre&gt;Hard Rock&lt;/genre&gt;
+		&lt;artist&gt;Led Zeppelin&lt;/artist&gt;
+	&lt;/disc&gt;
+	&lt;disc year=&quot;1990&quot;&gt;
+		&lt;name&gt;Shake Your Money Maker&lt;/name&gt;
+		&lt;genre&gt;Southern Rock&lt;/genre&gt;
+		&lt;artist&gt;The Black Crowes&lt;/artist&gt;
+	&lt;/disc&gt;
+	
+	&lt;movie year=&quot;1972&quot;&gt;
+		&lt;name&gt;The Godfather&lt;/name&gt;
+		&lt;genre&gt;Drama&lt;/genre&gt;
+		&lt;director&gt;Francis Ford Coppola&lt;/director&gt;
+	&lt;/movie&gt;
+	&lt;movie&gt;
+		&lt;name&gt;Interstellar&lt;/name&gt;
+		&lt;genre&gt;Adventure&lt;/genre&gt;
+		&lt;director&gt;Christopher Nolan&lt;/director&gt;
+	&lt;/movie&gt;
+	
+	&lt;book year=&quot;1965&quot;&gt;
+		&lt;name&gt;Dune&lt;/name&gt;
+		&lt;genre&gt;Science Fiction&lt;/genre&gt;
+		&lt;author&gt;Frank Herbert&lt;/author&gt;
+		&lt;pages&gt;412&lt;/pages&gt;
+	&lt;/book&gt;
+	&lt;book year=&quot;1922&quot;&gt;
+		&lt;name&gt;Siddhartha&lt;/name&gt;
+		&lt;genre&gt;Novel&lt;/genre&gt;
+		&lt;author&gt;Hermann Hesse&lt;/author&gt;
+		&lt;pages&gt;152&lt;/pages&gt;
+	&lt;/book&gt;
+&lt;/tns:collection&gt;" />
+
+	<hstestdb.XSD uuid="e5b64c34-636c-11e4-b729-685b35c84fb4"
+		content="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;schema xmlns=&quot;http://www.w3.org/2001/XMLSchema&quot; targetNamespace=&quot;http://www.esei.uvigo.es/dai/proyecto&quot; xmlns:tns=&quot;http://www.esei.uvigo.es/dai/proyecto&quot; elementFormDefault=&quot;qualified&quot;&gt;
+	&lt;element name=&quot;people&quot;&gt;
+		&lt;complexType&gt;
+			&lt;sequence&gt;
+				&lt;element name=&quot;person&quot;&gt;
+					&lt;complexType&gt;
+						&lt;sequence&gt;
+							&lt;element name=&quot;name&quot; type=&quot;string&quot; minOccurs=&quot;1&quot; maxOccurs=&quot;1&quot;/&gt;
+						&lt;/sequence&gt;
+						&lt;attribute name=&quot;dni&quot; type=&quot;string&quot;/&gt;
+					&lt;/complexType&gt;
+				&lt;/element&gt;
+			&lt;/sequence&gt;
+		&lt;/complexType&gt;
+	&lt;/element&gt;
+&lt;/schema&gt;" />
+	<hstestdb.XSD uuid="05b88faa-6909-11e4-aadc-685b35c84fb4"
+		content="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;schema xmlns=&quot;http://www.w3.org/2001/XMLSchema&quot; 
+	targetNamespace=&quot;http://www.esei.uvigo.es/dai/proyecto&quot;
+	xmlns:tns=&quot;http://www.esei.uvigo.es/dai/proyecto&quot;&gt;
+	&lt;element name=&quot;collection&quot;&gt;
+		&lt;complexType&gt;
+			&lt;sequence&gt;
+				&lt;element name=&quot;disc&quot; type=&quot;tns:disc&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;/&gt;
+				&lt;element name=&quot;movie&quot; type=&quot;tns:movie&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;/&gt;
+				&lt;element name=&quot;book&quot; type=&quot;tns:book&quot; minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;/&gt;
+			&lt;/sequence&gt;
+		&lt;/complexType&gt;
+	&lt;/element&gt;
+
+    &lt;complexType name=&quot;item&quot;&gt;
+    	&lt;sequence&gt;
+    		&lt;element name=&quot;name&quot; type=&quot;string&quot;/&gt;
+    	&lt;/sequence&gt;
+   		&lt;attribute name=&quot;year&quot; type=&quot;unsignedInt&quot;/&gt;
+    &lt;/complexType&gt;
+
+    &lt;complexType name=&quot;disc&quot;&gt;
+    	&lt;complexContent&gt;
+    		&lt;extension base=&quot;tns:item&quot;&gt;
+    			&lt;sequence&gt;
+    				&lt;element name=&quot;genre&quot; type=&quot;string&quot;/&gt;
+    				&lt;element name=&quot;artist&quot; type=&quot;string&quot;/&gt;
+    			&lt;/sequence&gt;
+    		&lt;/extension&gt;
+    	&lt;/complexContent&gt;
+    &lt;/complexType&gt;
+
+    &lt;complexType name=&quot;movie&quot;&gt;
+    	&lt;complexContent&gt;
+    		&lt;extension base=&quot;tns:item&quot;&gt;
+    			&lt;sequence&gt;
+    				&lt;element name=&quot;genre&quot; type=&quot;string&quot;/&gt;
+    				&lt;element name=&quot;director&quot; type=&quot;string&quot;/&gt;
+    			&lt;/sequence&gt;
+    		&lt;/extension&gt;
+    	&lt;/complexContent&gt;
+    &lt;/complexType&gt;
+
+    &lt;complexType name=&quot;book&quot;&gt;
+    	&lt;complexContent&gt;
+    		&lt;extension base=&quot;tns:item&quot;&gt;
+    			&lt;sequence&gt;
+    				&lt;element name=&quot;genre&quot; type=&quot;string&quot;/&gt;
+    				&lt;element name=&quot;author&quot; type=&quot;string&quot;/&gt;
+    				&lt;element name=&quot;pages&quot; type=&quot;unsignedInt&quot;/&gt;
+    			&lt;/sequence&gt;
+    		&lt;/extension&gt;
+    	&lt;/complexContent&gt;
+    &lt;/complexType&gt;
+&lt;/schema&gt;" />
+
+	<hstestdb.XSLT uuid="f260dfee-636c-11e4-bbdd-685b35c84fb4" xsd="e5b64c34-636c-11e4-b729-685b35c84fb4"
+		content="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;xsl:stylesheet xmlns:xsl=&quot;http://www.w3.org/1999/XSL/Transform&quot;
+	xmlns:tns=&quot;http://www.esei.uvigo.es/dai/proyecto&quot; version=&quot;1.0&quot;&gt;
+
+	&lt;xsl:output method=&quot;html&quot; indent=&quot;yes&quot; encoding=&quot;utf-8&quot; /&gt;
+
+	&lt;xsl:template match=&quot;/&quot;&gt;
+		&lt;xsl:text disable-output-escaping=&quot;yes&quot;&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/xsl:text&gt;
+		&lt;html&gt;
+			&lt;head&gt;
+				&lt;title&gt;People&lt;/title&gt;
+			&lt;/head&gt;
+			&lt;body&gt;
+				&lt;div&gt;
+					&lt;h1&gt;People&lt;/h1&gt;
+					&lt;xsl:apply-templates select=&quot;tns:people/tns:person&quot; /&gt;
+				&lt;/div&gt;
+			&lt;/body&gt;
+		&lt;/html&gt;
+	&lt;/xsl:template&gt;
+
+	&lt;xsl:template match=&quot;tns:person&quot;&gt;
+		&lt;div class=&quot;person&quot;&gt;
+			&lt;h3&gt;DNI: &lt;xsl:value-of select=&quot;@dni&quot;/&gt;&lt;/h3&gt;
+			&lt;div class=&quot;name&quot;&gt;&lt;xsl:value-of select=&quot;tns:name&quot; /&gt;&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/xsl:template&gt;
+&lt;/xsl:stylesheet&gt;" />
+	<hstestdb.XSLT uuid="1fd26c94-6909-11e4-9a75-685b35c84fb4" xsd="05b88faa-6909-11e4-aadc-685b35c84fb4"
+		content="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;xsl:stylesheet xmlns:xsl=&quot;http://www.w3.org/1999/XSL/Transform&quot;
+	xmlns:tns=&quot;http://www.esei.uvigo.es/dai/proyecto&quot; version=&quot;1.0&quot;&gt;
+
+	&lt;xsl:output method=&quot;html&quot; indent=&quot;yes&quot; encoding=&quot;utf-8&quot; /&gt;
+
+	&lt;xsl:template match=&quot;/&quot;&gt;
+		&lt;xsl:text disable-output-escaping=&quot;yes&quot;&gt;&amp;lt;!DOCTYPE html&amp;gt;&lt;/xsl:text&gt;
+		&lt;html&gt;
+			&lt;head&gt;
+				&lt;title&gt;Collection&lt;/title&gt;
+			&lt;/head&gt;
+			&lt;body&gt;
+				&lt;div&gt;
+					&lt;h1&gt;Collection&lt;/h1&gt;
+					&lt;h2&gt;Discs&lt;/h2&gt;
+					&lt;xsl:apply-templates select=&quot;tns:collection/disc&quot; /&gt;
+					&lt;hr/&gt;
+					&lt;h2&gt;Movies&lt;/h2&gt;
+					&lt;xsl:apply-templates select=&quot;tns:collection/movie&quot; /&gt;
+					&lt;hr/&gt;
+					&lt;h2&gt;Books&lt;/h2&gt;
+					&lt;xsl:apply-templates select=&quot;tns:collection/book&quot; /&gt;
+				&lt;/div&gt;
+			&lt;/body&gt;
+		&lt;/html&gt;
+	&lt;/xsl:template&gt;
+
+	&lt;xsl:template match=&quot;disc&quot;&gt;
+		&lt;div class=&quot;disc&quot;&gt;
+			&lt;h3&gt;&lt;xsl:value-of select=&quot;name&quot;/&gt;(&lt;xsl:value-of select=&quot;@year&quot;/&gt;)&lt;/h3&gt;
+			&lt;div class=&quot;artist&quot;&gt;Artist: &lt;xsl:value-of select=&quot;artist&quot; /&gt;&lt;/div&gt;
+			&lt;div class=&quot;genre&quot;&gt;Genre: &lt;xsl:value-of select=&quot;genre&quot; /&gt;&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/xsl:template&gt;
+
+	&lt;xsl:template match=&quot;movie&quot;&gt;
+		&lt;div class=&quot;movie&quot;&gt;
+			&lt;h3&gt;&lt;xsl:value-of select=&quot;name&quot;/&gt;(&lt;xsl:value-of select=&quot;@year&quot;/&gt;)&lt;/h3&gt;
+			&lt;div class=&quot;director&quot;&gt;Director: &lt;xsl:value-of select=&quot;director&quot; /&gt;&lt;/div&gt;
+			&lt;div class=&quot;genre&quot;&gt;Genre: &lt;xsl:value-of select=&quot;genre&quot; /&gt;&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/xsl:template&gt;
+
+	&lt;xsl:template match=&quot;book&quot;&gt;
+		&lt;div class=&quot;book&quot;&gt;
+			&lt;h3&gt;&lt;xsl:value-of select=&quot;name&quot;/&gt;(&lt;xsl:value-of select=&quot;@year&quot;/&gt;)&lt;/h3&gt;
+			&lt;div class=&quot;author&quot;&gt;Author: &lt;xsl:value-of select=&quot;author&quot; /&gt;&lt;/div&gt;
+			&lt;div class=&quot;genre&quot;&gt;Genre: &lt;xsl:value-of select=&quot;genre&quot; /&gt;&lt;/div&gt;
+			&lt;div class=&quot;pages&quot;&gt;Pages: &lt;xsl:value-of select=&quot;pages&quot; /&gt;&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/xsl:template&gt;
+&lt;/xsl:stylesheet&gt;" />
+</dataset>

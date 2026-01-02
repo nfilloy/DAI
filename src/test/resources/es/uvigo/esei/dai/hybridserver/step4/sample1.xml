@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<people xmlns="http://www.esei.uvigo.es/dai/proyecto" 
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	  xsi:schemaLocation="http://www.esei.uvigo.es/dai/proyecto sample.xsd">
+	<person dni="123456"><name>Pepe</name></person>
+</people>
