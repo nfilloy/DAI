@@ -21,6 +21,25 @@ CREATE TABLE IF NOT EXISTS `HTML` (
   PRIMARY KEY (`uuid`)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `XML` (
+  `uuid` CHAR(36) NOT NULL,
+  `content` TEXT NOT NULL,
+  PRIMARY KEY (`uuid`)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `XSD` (
+  `uuid` CHAR(36) NOT NULL,
+  `content` TEXT NOT NULL,
+  PRIMARY KEY (`uuid`)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `XSLT` (
+  `uuid` CHAR(36) NOT NULL,
+  `xsd` CHAR(36) NOT NULL,
+  `content` TEXT NOT NULL,
+  PRIMARY KEY (`uuid`)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- Quick sanity checks
 SHOW DATABASES LIKE 'hstestdb';
 SHOW TABLES;

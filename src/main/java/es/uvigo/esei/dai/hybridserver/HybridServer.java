@@ -21,12 +21,15 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import jakarta.xml.ws.Endpoint;
 
 public class HybridServer implements AutoCloseable {
   private static final int DEFAULT_PORT = 8888;
@@ -48,13 +51,15 @@ public class HybridServer implements AutoCloseable {
   private final int workerThreads;
   private final String welcomePage;
   private final Supplier<PageRepository> repositoryFactory;
+  private final Configuration configuration;
 
   private Thread serverThread;
   private ExecutorService executor;
   private volatile boolean stop;
+  private Endpoint webServiceEndpoint;
 
   public HybridServer() {
-    this(DEFAULT_PORT, DEFAULT_POOL_SIZE, DEFAULT_PAGE, createInMemorySupplier(defaultPages()));
+    this(DEFAULT_PORT, DEFAULT_POOL_SIZE, DEFAULT_PAGE, createInMemorySupplier(defaultPages()), null);
   }
 
   public HybridServer(Map<String, String> pages) {
@@ -62,7 +67,8 @@ public class HybridServer implements AutoCloseable {
         DEFAULT_PORT,
         DEFAULT_POOL_SIZE,
         DEFAULT_PAGE,
-        createInMemorySupplier(pages == null || pages.isEmpty() ? defaultPages() : new LinkedHashMap<>(pages)));
+        createInMemorySupplier(pages == null || pages.isEmpty() ? defaultPages() : new LinkedHashMap<>(pages)),
+        null);
   }
 
   public HybridServer(Properties properties) {
@@ -70,7 +76,8 @@ public class HybridServer implements AutoCloseable {
         parsePort(properties),
         parseWorkerThreads(properties),
         extractWelcomePage(properties),
-        createRepository(properties));
+        createRepository(properties),
+        null);
   }
 
   public HybridServer(Configuration configuration) {
@@ -78,14 +85,16 @@ public class HybridServer implements AutoCloseable {
         configuration.getHttpPort(),
         configuration.getNumClients(),
         DEFAULT_PAGE,
-        createRepositoryFromConfiguration(configuration));
+        createRepositoryFromConfiguration(configuration),
+        configuration);
   }
 
-  private HybridServer(int port, int workerThreads, String welcomePage, Supplier<PageRepository> repositoryFactory) {
+  private HybridServer(int port, int workerThreads, String welcomePage, Supplier<PageRepository> repositoryFactory, Configuration configuration) {
     this.port = port;
     this.workerThreads = Math.max(1, workerThreads);
     this.welcomePage = welcomePage != null ? welcomePage : DEFAULT_PAGE;
     this.repositoryFactory = repositoryFactory;
+    this.configuration = configuration;
   }
 
   public int getPort() {
@@ -99,6 +108,18 @@ public class HybridServer implements AutoCloseable {
 
     this.stop = false;
     this.executor = Executors.newFixedThreadPool(this.workerThreads);
+
+    if (this.configuration != null &&
+        this.configuration.getWebServiceURL() != null &&
+        !this.configuration.getWebServiceURL().isBlank()) {
+      HybridServerServiceImpl serviceImpl = new HybridServerServiceImpl(
+          this.configuration.getDbURL(),
+          this.configuration.getDbUser(),
+          this.configuration.getDbPassword()
+      );
+      this.webServiceEndpoint = Endpoint.publish(this.configuration.getWebServiceURL(), serviceImpl);
+    }
+
     this.serverThread = new Thread(() -> {
       try (ServerSocket serverSocket = new ServerSocket(this.port)) {
         while (true) {
@@ -120,6 +141,11 @@ public class HybridServer implements AutoCloseable {
 
   @Override
   public void close() {
+    if (this.webServiceEndpoint != null) {
+      this.webServiceEndpoint.stop();
+      this.webServiceEndpoint = null;
+    }
+
     this.stop = true;
 
     try (Socket socket = new Socket("localhost", this.port)) {
@@ -228,7 +254,8 @@ public class HybridServer implements AutoCloseable {
     if (databaseUrl != null && !databaseUrl.isBlank()) {
       final String user = configuration.getDbUser();
       final String password = configuration.getDbPassword();
-      return () -> new DatabasePageRepository(databaseUrl, user, password);
+      final List<ServerConfiguration> servers = configuration.getServers();
+      return () -> new DatabasePageRepository(databaseUrl, user, password, servers);
     }
 
     return createInMemorySupplier(defaultPages());
