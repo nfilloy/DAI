@@ -20,9 +20,8 @@ public class RemoteServiceClient {
         try {
             URL wsdlUrl = new URL(serverConfig.getWsdl());
             QName serviceName = new QName(
-                serverConfig.getNamespace(),
-                serverConfig.getService()
-            );
+                    serverConfig.getNamespace(),
+                    serverConfig.getService());
 
             Service service = Service.create(wsdlUrl, serviceName);
             return service.getPort(HybridServerService.class);
@@ -112,5 +111,47 @@ public class RemoteServiceClient {
     @FunctionalInterface
     private interface UuidLister {
         List<String> list(HybridServerService service);
+    }
+
+    // Methods that return PageEntry with server httpAddress for proper P2P listing
+    // links
+
+    public static List<PageEntry> collectHtmlEntries(List<ServerConfiguration> servers) {
+        return collectEntries(servers, HybridServerService::listHtmlUuids);
+    }
+
+    public static List<PageEntry> collectXmlEntries(List<ServerConfiguration> servers) {
+        return collectEntries(servers, HybridServerService::listXmlUuids);
+    }
+
+    public static List<PageEntry> collectXsdEntries(List<ServerConfiguration> servers) {
+        return collectEntries(servers, HybridServerService::listXsdUuids);
+    }
+
+    public static List<PageEntry> collectXsltEntries(List<ServerConfiguration> servers) {
+        return collectEntries(servers, HybridServerService::listXsltUuids);
+    }
+
+    private static List<PageEntry> collectEntries(List<ServerConfiguration> servers, UuidLister lister) {
+        List<PageEntry> allEntries = new ArrayList<>();
+        for (ServerConfiguration server : servers) {
+            try {
+                RemoteServiceClient client = new RemoteServiceClient(server);
+                HybridServerService service = client.getService();
+                if (service != null) {
+                    List<String> uuids = lister.list(service);
+                    if (uuids != null) {
+                        String httpAddress = server.getHttpAddress();
+                        String serverName = server.getName();
+                        for (String uuid : uuids) {
+                            allEntries.add(new PageEntry(uuid, httpAddress, serverName));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Server down - continue
+            }
+        }
+        return allEntries;
     }
 }

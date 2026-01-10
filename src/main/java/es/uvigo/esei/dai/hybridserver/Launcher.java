@@ -18,6 +18,7 @@
 package es.uvigo.esei.dai.hybridserver;
 
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -30,26 +31,48 @@ public class Launcher {
       System.exit(1);
     }
 
-    Properties properties = null;
+    HybridServer server = null;
 
     if (args.length > 0) {
       final String configPath = args[0];
-      try (InputStream input = new FileInputStream(configPath)) {
-        properties = new Properties();
-        properties.load(input);
-      } catch (IOException e) {
-        System.err.println("No se pudo cargar el fichero de configuracion '" + configPath + "'. Se usara la configuracion por defecto.");
-        properties = null;
+
+      if (configPath.toLowerCase().endsWith(".xml")) {
+        // XML configuration (second release)
+        try (FileReader reader = new FileReader(configPath)) {
+          XMLConfigurationLoader loader = new XMLConfigurationLoader();
+          Configuration config = loader.load(reader);
+          server = new HybridServer(config);
+        } catch (Exception e) {
+          System.err.println("Error al cargar el fichero de configuracion XML '" + configPath + "': " + e.getMessage());
+          System.exit(1);
+        }
+      } else {
+        // Properties configuration (first release)
+        try (InputStream input = new FileInputStream(configPath)) {
+          Properties properties = new Properties();
+          properties.load(input);
+          server = new HybridServer(properties);
+        } catch (IOException e) {
+          System.err.println("No se pudo cargar el fichero de configuracion '" + configPath
+              + "'. Se usara la configuracion por defecto.");
+          server = new HybridServer();
+        }
       }
+    } else {
+      server = new HybridServer();
     }
 
-    try (HybridServer server = properties != null ? new HybridServer(properties) : new HybridServer()) {
+    try {
       server.start();
       System.out.println("Servidor escuchando en http://localhost:" + server.getPort());
       System.out.println("Pulsa ENTER para parar...");
       System.in.read();
     } catch (IOException e) {
       e.printStackTrace();
+    } finally {
+      if (server != null) {
+        server.close();
+      }
     }
   }
 }

@@ -59,7 +59,12 @@ public class HybridServer implements AutoCloseable {
   private Endpoint webServiceEndpoint;
 
   public HybridServer() {
-    this(DEFAULT_PORT, DEFAULT_POOL_SIZE, DEFAULT_PAGE, createInMemorySupplier(defaultPages()), null);
+    this(
+        DEFAULT_PORT,
+        DEFAULT_POOL_SIZE,
+        DEFAULT_PAGE,
+        createDefaultRepository(),
+        null);
   }
 
   public HybridServer(Map<String, String> pages) {
@@ -67,7 +72,7 @@ public class HybridServer implements AutoCloseable {
         DEFAULT_PORT,
         DEFAULT_POOL_SIZE,
         DEFAULT_PAGE,
-        createInMemorySupplier(pages == null || pages.isEmpty() ? defaultPages() : new LinkedHashMap<>(pages)),
+        createInMemorySupplier(pages != null ? new LinkedHashMap<>(pages) : new LinkedHashMap<>()),
         null);
   }
 
@@ -89,7 +94,8 @@ public class HybridServer implements AutoCloseable {
         configuration);
   }
 
-  private HybridServer(int port, int workerThreads, String welcomePage, Supplier<PageRepository> repositoryFactory, Configuration configuration) {
+  private HybridServer(int port, int workerThreads, String welcomePage, Supplier<PageRepository> repositoryFactory,
+      Configuration configuration) {
     this.port = port;
     this.workerThreads = Math.max(1, workerThreads);
     this.welcomePage = welcomePage != null ? welcomePage : DEFAULT_PAGE;
@@ -115,8 +121,7 @@ public class HybridServer implements AutoCloseable {
       HybridServerServiceImpl serviceImpl = new HybridServerServiceImpl(
           this.configuration.getDbURL(),
           this.configuration.getDbUser(),
-          this.configuration.getDbPassword()
-      );
+          this.configuration.getDbPassword());
       this.webServiceEndpoint = Endpoint.publish(this.configuration.getWebServiceURL(), serviceImpl);
     }
 
@@ -166,29 +171,20 @@ public class HybridServer implements AutoCloseable {
   }
 
   private void shutdownExecutor() {
-    if (this.executor == null) {
-      return;
-    }
-
-    this.executor.shutdown();
-    try {
-      if (!this.executor.awaitTermination(60, TimeUnit.SECONDS)) {
+    if (this.executor != null) {
+      this.executor.shutdown();
+      try {
+        // Esperar indefinidamente a que terminen todas las tareas
+        while (!this.executor.awaitTermination(1, TimeUnit.MINUTES)) {
+          // Seguir esperando
+        }
+      } catch (InterruptedException e) {
         this.executor.shutdownNow();
-        this.executor.awaitTermination(60, TimeUnit.SECONDS);
+        Thread.currentThread().interrupt();
+      } finally {
+        this.executor = null;
       }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      this.executor.shutdownNow();
     }
-
-    this.executor = null;
-  }
-
-  private static Map<String, String> defaultPages() {
-    final Map<String, String> pages = new LinkedHashMap<>();
-    pages.put("12345", "<html><body>pagina 12345</body></html>");
-    pages.put("9898", "<html><body>paguina 9898</body></html>");
-    return pages;
   }
 
   private static String extractWelcomePage(Properties properties) {
@@ -246,7 +242,7 @@ public class HybridServer implements AutoCloseable {
       }
     }
 
-    return createInMemorySupplier(defaultPages());
+    return createDefaultRepository();
   }
 
   private static Supplier<PageRepository> createRepositoryFromConfiguration(Configuration configuration) {
@@ -258,7 +254,7 @@ public class HybridServer implements AutoCloseable {
       return () -> new DatabasePageRepository(databaseUrl, user, password, servers);
     }
 
-    return createInMemorySupplier(defaultPages());
+    return createDefaultRepository();
   }
 
   private static Supplier<PageRepository> createInMemorySupplier(Map<String, String> pages) {
@@ -266,22 +262,11 @@ public class HybridServer implements AutoCloseable {
     return () -> repository;
   }
 
-  private static Map<String, String> extractPages(Properties properties) {
-    final Map<String, String> pages = new LinkedHashMap<>();
-
-    if (properties == null) {
-      return pages;
-    }
-
-    for (String name : properties.stringPropertyNames()) {
-      if (name.startsWith("page.")) {
-        final String uuid = name.substring("page.".length()).trim();
-        if (!uuid.isEmpty()) {
-          pages.put(uuid, properties.getProperty(name));
-        }
-      }
-    }
-
-    return pages;
+  private static Supplier<PageRepository> createDefaultRepository() {
+    // Default database parameters as specified in the project requirements
+    final String defaultUrl = "jdbc:mysql://localhost:3306/hstestdb";
+    final String defaultUser = "hsdb";
+    final String defaultPassword = "hsdbpass";
+    return () -> new DatabasePageRepository(defaultUrl, defaultUser, defaultPassword);
   }
 }

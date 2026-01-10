@@ -157,12 +157,12 @@ class DatabasePageRepository implements PageRepository {
     }
 
     final String body = new StringBuilder()
-      .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>Pagina almacenada</title></head><body>")
-      .append("<p>La pagina se ha almacenado correctamente.</p>")
-      .append("<p><a href=\"").append(resource).append("?uuid=").append(uuid).append("\">")
-      .append(uuid).append("</a></p>")
-      .append("</body></html>")
-      .toString();
+        .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>Pagina almacenada</title></head><body>")
+        .append("<p>La pagina se ha almacenado correctamente.</p>")
+        .append("<p><a href=\"").append(resource).append("?uuid=").append(uuid).append("\">")
+        .append(uuid).append("</a></p>")
+        .append("</body></html>")
+        .toString();
 
     return createHtmlResponse(request.getHttpVersion(), HTTPResponseStatus.S200, body);
   }
@@ -235,52 +235,73 @@ class DatabasePageRepository implements PageRepository {
 
   private String renderPageList(String resource) {
     final StringBuilder sb = new StringBuilder()
-      .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>Paginas disponibles</title></head><body>")
-      .append("<h1>Paginas disponibles</h1><ul>");
+        .append(
+            "<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>Paginas disponibles</title></head><body>");
 
-    for (String uuid : listUuids(resource)) {
-      sb.append("<li><a href=\"").append(resource).append("?uuid=").append(uuid).append("\">").append(uuid).append("</a></li>");
+    // Local pages
+    List<PageEntry> localEntries = listEntriesLocal(resource);
+    sb.append("<h2>Local Server</h2><ul>");
+    for (PageEntry entry : localEntries) {
+      sb.append("<li><a href=\"").append(resource).append("?uuid=").append(entry.getUuid()).append("\">")
+          .append(entry.getUuid()).append("</a></li>");
     }
+    sb.append("</ul>");
 
-    return sb.append("</ul></body></html>").toString();
-  }
-
-  private List<String> listUuids(String resource) {
-    List<String> allUuids = new ArrayList<>(listUuidsLocal(resource));
-
+    // Remote pages grouped by server
     if (!remoteServers.isEmpty()) {
-      allUuids.addAll(listUuidsRemote(resource));
+      List<PageEntry> remoteEntries = listEntriesRemote(resource);
+      java.util.Map<String, java.util.List<PageEntry>> byServer = new java.util.LinkedHashMap<>();
+      for (PageEntry entry : remoteEntries) {
+        String name = entry.getServerName() != null ? entry.getServerName() : "Unknown";
+        byServer.computeIfAbsent(name, k -> new java.util.ArrayList<>()).add(entry);
+      }
+
+      for (java.util.Map.Entry<String, java.util.List<PageEntry>> serverGroup : byServer.entrySet()) {
+        sb.append("<h2>").append(serverGroup.getKey()).append("</h2><ul>");
+        for (PageEntry entry : serverGroup.getValue()) {
+          String serverUrl = entry.getServerUrl();
+          if (!serverUrl.endsWith("/")) {
+            serverUrl = serverUrl + "/";
+          }
+          sb.append("<li><a href=\"").append(serverUrl).append(resource).append("?uuid=").append(entry.getUuid())
+              .append("\">")
+              .append(entry.getUuid()).append("</a></li>");
+        }
+        sb.append("</ul>");
+      }
     }
 
-    return allUuids;
+    return sb.append("</body></html>").toString();
   }
 
-  private List<String> listUuidsLocal(String resource) {
+  private List<PageEntry> listEntriesLocal(String resource) {
     final String tableName = getTableName(resource);
     final String sql = "SELECT uuid FROM " + tableName;
-    final List<String> uuids = new ArrayList<>();
+    final List<PageEntry> entries = new ArrayList<>();
 
-    try (Connection connection = openConnection(); PreparedStatement stmt = connection.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+    try (Connection connection = openConnection();
+        PreparedStatement stmt = connection.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery()) {
       while (rs.next()) {
-        uuids.add(rs.getString(1));
+        entries.add(new PageEntry(rs.getString(1), null, null));
       }
     } catch (SQLException e) {
       throw new RuntimeException("Failed to list pages", e);
     }
 
-    return uuids;
+    return entries;
   }
 
-  private List<String> listUuidsRemote(String resource) {
+  private List<PageEntry> listEntriesRemote(String resource) {
     switch (resource) {
       case "html":
-        return RemoteServiceClient.collectHtmlUuids(remoteServers);
+        return RemoteServiceClient.collectHtmlEntries(remoteServers);
       case "xml":
-        return RemoteServiceClient.collectXmlUuids(remoteServers);
+        return RemoteServiceClient.collectXmlEntries(remoteServers);
       case "xsd":
-        return RemoteServiceClient.collectXsdUuids(remoteServers);
+        return RemoteServiceClient.collectXsdEntries(remoteServers);
       case "xslt":
-        return RemoteServiceClient.collectXsltUuids(remoteServers);
+        return RemoteServiceClient.collectXsltEntries(remoteServers);
       default:
         return Collections.emptyList();
     }
@@ -377,14 +398,12 @@ class DatabasePageRepository implements PageRepository {
   private String transformXmlWithXslt(String xmlContent, String xsltContent) throws Exception {
     TransformerFactory transformerFactory = TransformerFactory.newInstance();
     Transformer transformer = transformerFactory.newTransformer(
-      new StreamSource(new StringReader(xsltContent))
-    );
+        new StreamSource(new StringReader(xsltContent)));
 
     StringWriter writer = new StringWriter();
     transformer.transform(
-      new StreamSource(new StringReader(xmlContent)),
-      new StreamResult(writer)
-    );
+        new StreamSource(new StringReader(xmlContent)),
+        new StreamResult(writer));
 
     return writer.toString();
   }
@@ -449,11 +468,11 @@ class DatabasePageRepository implements PageRepository {
 
   private HTTPResponse createErrorResponse(String version, HTTPResponseStatus status, String message) {
     final String body = new StringBuilder()
-      .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>")
-      .append(status.getStatus()).append("</title></head><body><h1>")
-      .append(status.getCode()).append(' ').append(status.getStatus()).append("</h1><p>")
-      .append(message).append("</p></body></html>")
-      .toString();
+        .append("<!DOCTYPE html>\n<html><head><meta charset=\"UTF-8\"/><title>")
+        .append(status.getStatus()).append("</title></head><body><h1>")
+        .append(status.getCode()).append(' ').append(status.getStatus()).append("</h1><p>")
+        .append(message).append("</p></body></html>")
+        .toString();
 
     return createHtmlResponse(version, status, body);
   }

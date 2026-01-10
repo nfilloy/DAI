@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns="http://www.esei.uvigo.es/dai/hybridserver">
+  <connections>
+    <http>8001</http>
+    <webservice>http://localhost:10001/ws/HybridServer</webservice>
+    <numClients>50</numClients>
+  </connections>
+  <database>
+    <user>hsdb</user>
+    <password>hsdbpass</password>
+    <url>jdbc:mysql://localhost:3306/hstestdb1</url>
+  </database>
+  <servers>
+    <server name="Server 2" 
+            wsdl="http://localhost:10002/ws/HybridServer?wsdl" 
+            namespace="http://hybridserver.dai.esei.uvigo.es/" 
+            service="HybridServerService" 
+            httpAddress="http://localhost:8002"/>
+    <server name="Server 3" 
+            wsdl="http://localhost:10003/ws/HybridServer?wsdl" 
+            namespace="http://hybridserver.dai.esei.uvigo.es/" 
+            service="HybridServerService" 
+            httpAddress="http://localhost:8003"/>
+    <server name="Server 4" 
+            wsdl="http://localhost:10004/ws/HybridServer?wsdl" 
+            namespace="http://hybridserver.dai.esei.uvigo.es/" 
+            service="HybridServerService" 
+            httpAddress="http://localhost:8004"/>
+  </servers>
+</configuration>
