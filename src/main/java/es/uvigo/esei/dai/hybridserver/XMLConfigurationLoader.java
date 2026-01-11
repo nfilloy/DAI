@@ -40,7 +40,7 @@ public class XMLConfigurationLoader {
 
   public Configuration load(Reader reader) throws Exception {
     SchemaFactory schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-    Schema schema = schemaFactory.newSchema(getClass().getResource("/configuration.xsd"));
+    Schema schema = schemaFactory.newSchema(new java.io.File("configuration.xsd"));
 
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     dbf.setNamespaceAware(true);
@@ -69,12 +69,11 @@ public class XMLConfigurationLoader {
     for (int i = 0; i < serverNodes.getLength(); i++) {
       Element serverEl = (Element) serverNodes.item(i);
       servers.add(new ServerConfiguration(
-        serverEl.getAttribute("name"),
-        serverEl.getAttribute("wsdl"),
-        serverEl.getAttribute("namespace"),
-        serverEl.getAttribute("service"),
-        serverEl.getAttribute("httpAddress")
-      ));
+          serverEl.getAttribute("name"),
+          serverEl.getAttribute("wsdl"),
+          serverEl.getAttribute("namespace"),
+          serverEl.getAttribute("service"),
+          serverEl.getAttribute("httpAddress")));
     }
 
     return new Configuration(httpPort, numClients, webServiceURL, dbUser, dbPassword, dbURL, servers);

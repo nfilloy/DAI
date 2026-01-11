@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns="http://www.esei.uvigo.es/dai/hybridserver">
+    <connections>
+        <http>8888</http>
+        <!-- Falta webservice -->
+        <numClients>50</numClients>
+    </connections>
+    <!-- Falta database -->
+    <servers>
+    </servers>
+</configuration>
